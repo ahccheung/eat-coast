@@ -1,0 +1,5 @@
+insight
+.envivenv
+*.pyc
+.DS_Store
+.env
