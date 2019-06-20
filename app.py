@@ -5,18 +5,23 @@ import dash_html_components as html
 import dash_table as dt
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
+import flask
 import networkx as nx
 import pandas as pd
+import numpy as np
 from ast import literal_eval
 import optimizer_app
 
 bos_graph = nx.read_gpickle('bos_graph')
 restaurants = pd.read_csv('bos_restaurants',index_col=0, 
-    converters={"categories": literal_eval, "location.display_address":literal_eval})
+    converters = {"categories": literal_eval, "location.display_address":literal_eval})
+grid_points = np.loadtxt('grid_points')
+grid_to_rest = np.loadtxt('gridpts_to_restaurants')
 
 mapbox_access_token = 'pk.eyJ1IjoiY2hldW5nYWhjIiwiYSI6ImNqd3ZscnRyZjAxZjQzeXM1c3hxdml0aDkifQ.cyUjrtUZ01q5isW4UG9-VQ'
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
+server = flask.Flask(__name__)
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([html.Div([
@@ -148,8 +153,7 @@ def update_table_fig(n, loc1, loc2, loc3, loc4, cat, cat_weight, dist_weight, ra
         lats = [point[0] for point in points]
         lons = [point[1] for point in points]
 
-        centroid = optimizer_app.get_centroid(points)
-        top_10_info, top_10_display = optimizer_app.get_restaurants(conditions, weights, addresses, restaurants, bos_graph)
+        top_10_info, top_10_display = optimizer_app.get_restaurants(conditions, weights, addresses, restaurants, bos_graph, grid_to_rest, grid_points)
 
         table = dt.DataTable(
             columns=[{"name": i, "id": i} for i in top_10_display.columns],
@@ -166,7 +170,7 @@ def update_table_fig(n, loc1, loc2, loc3, loc4, cat, cat_weight, dist_weight, ra
 
         layout = go.Layout(title='Restaurant locations', autosize=True, hovermode='closest', showlegend=False, 
             height=550, mapbox={'accesstoken': mapbox_access_token, 'bearing': 0, 'zoom': 15,
-            'center': {'lat': centroid[0], 'lon': centroid[1]}, "style": 'mapbox://styles/mapbox/light-v9'})
+            "style": 'mapbox://styles/mapbox/light-v9'})
 
         figure = {"data": [trace1, trace2], "layout": layout}
         return (table, figure)
