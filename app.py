@@ -14,7 +14,7 @@ import optimizer_app
 
 #bos_graph = nx.read_gpickle('bos_graph')
 restaurants = pd.read_csv('bos_restaurants',index_col=0, 
-#    converters = {"categories": literal_eval, "location.display_address":literal_eval})
+    converters = {"categories": literal_eval, "location.display_address":literal_eval})
 #grid_points = np.loadtxt('grid_points')
 #grid_to_rest = np.loadtxt('gridpts_to_restaurants')
 
