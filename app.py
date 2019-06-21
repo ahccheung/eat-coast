@@ -12,11 +12,11 @@ import numpy as np
 from ast import literal_eval
 import optimizer_app
 
-bos_graph = nx.read_gpickle('bos_graph')
+#bos_graph = nx.read_gpickle('bos_graph')
 restaurants = pd.read_csv('bos_restaurants',index_col=0, 
-    converters = {"categories": literal_eval, "location.display_address":literal_eval})
-grid_points = np.loadtxt('grid_points')
-grid_to_rest = np.loadtxt('gridpts_to_restaurants')
+#    converters = {"categories": literal_eval, "location.display_address":literal_eval})
+#grid_points = np.loadtxt('grid_points')
+#grid_to_rest = np.loadtxt('gridpts_to_restaurants')
 
 mapbox_access_token = 'pk.eyJ1IjoiY2hldW5nYWhjIiwiYSI6ImNqd3ZscnRyZjAxZjQzeXM1c3hxdml0aDkifQ.cyUjrtUZ01q5isW4UG9-VQ'
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
