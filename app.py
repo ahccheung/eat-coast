@@ -12,40 +12,46 @@ import numpy as np
 from ast import literal_eval
 import optimizer_app
 
-#bos_graph = nx.read_gpickle('bos_graph')
-restaurants = pd.read_csv('bos_restaurants',index_col=0, 
+bos_graph = nx.read_gpickle('transit_graph')
+restaurants = pd.read_csv('bos_restaurants_1',index_col=0, 
     converters = {"categories": literal_eval, "location.display_address":literal_eval})
-#grid_points = np.loadtxt('grid_points')
-#grid_to_rest = np.loadtxt('gridpts_to_restaurants')
 
 mapbox_access_token = 'pk.eyJ1IjoiY2hldW5nYWhjIiwiYSI6ImNqd3ZscnRyZjAxZjQzeXM1c3hxdml0aDkifQ.cyUjrtUZ01q5isW4UG9-VQ'
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+#external_stylesheets = ['https://cdnjs.cloudflare.com/ajax/libs/milligram/1.3.0/milligram.css']
 
+#https://cdnjs.cloudflare.com/ajax/libs/milligram/1.3.0/milligram.css
+
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 server = flask.Flask(__name__)
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-app.layout = html.Div([html.Div([
-	html.H1('Where2Eat'),
+app.layout = html.Div([
+        html.Div('', style={'padding':20}),
+        html.Div([
+	html.H1('Eat Together'),
+        html.H4('Helping friends meet in the middle'),
+        html.Div('', style={'padding':15}),
 	html.Div(children='''
         Enter addresses for your restaurant search:
     ''', style={'textAlign': 'left',
         }),
 	html.Div(dcc.Textarea(placeholder='Enter address 1',
-		value='',
-		style={'width': '80%'}, id='loc_1')),
+		value='Prudential Center, Boston',
+		style={'width': '80%','font-size': '14px'}, id='loc_1')),
 
 	html.Div(dcc.Textarea(placeholder='Enter address 2',
 		value='',
-		style={'width': '80%'}, id='loc_2')),
+		style={'width': '80%','font-size': '14px'}, id='loc_2')),
 
 	html.Div(dcc.Textarea(placeholder='Enter address 3',
 		value='',
-		style={'width': '80%'}, id='loc_3')),
+		style={'width': '80%','font-size': '14px'}, id='loc_3')),
 
 	html.Div(dcc.Textarea(placeholder='Enter address 4',
 		value='',
-		style={'width': '80%'}, id='loc_4')), 
+		style={'width': '80%','font-size': '14px'}, id='loc_4')), 
 
+        html.Div('', style={'padding':100}),
 	html.Div('Select price range:'),
 	dcc.Checklist(
     options=[
@@ -53,7 +59,7 @@ app.layout = html.Div([html.Div([
         {'label': '$$', 'value': '$$'},
         {'label': '$$$', 'value': '$$$'},
         {'label': '$$$$', 'value': '$$$$'}
-    ],
+    ], labelStyle={'display':'inline'},
     values=['$','$$','$$$','$$$$'], id='price_range'),
 
 	html.Div('Preferred restaurant types:'),
@@ -76,42 +82,56 @@ app.layout = html.Div([html.Div([
     multi=True, id='categories'),
 
 	html.Div('Importance of restaurant type:'),
-    dcc.Slider(
+    html.Div(dcc.Slider(
     min=0,
     max=1,
     step=0.1,
     value=1,
     marks={0.1*i: '{:.1f}'.format(0.1*i) for i in range(10)
-    }, id='category_weight'),
+    }, id='category_weight'),style={'width':'90%','margin-left':'auto', 'margin-right':'auto'}),
+
     html.Div('',style={'padding': 10}),
 
     html.Div('Importance of restaurant proximity:'),
-    dcc.Slider(
+    html.Div(dcc.Slider(
     min=0,
     max=1,
     step=0.1,
     value=1,
     marks={0.1*i: '{:.1f}'.format(0.1*i) for i in range(10)
-    }, id='distance_weight'),
+    }, id='distance_weight'),style={'width':'90%','margin-left':'auto', 'margin-right':'auto'}),
+
     html.Div('',style={'padding': 10}),
 
     html.Div('Importance of restaurant rating:'),
-    dcc.Slider(
+    html.Div(dcc.Slider(
     min=0,
     max=1,
     step=0.1,
     value=1,
     marks={0.1*i: '{:.1f}'.format(0.1*i) for i in range(10)
-    }, id='rating_weight'),
+    }, id='rating_weight'),style={'width':'90%','margin-left':'auto', 'margin-right':'auto'}),
+
     html.Div('',style={'padding': 10}),
     html.Button(id='submit', children='Find Restaurants'),
     html.Div('',style={'padding': 30})],
 	style={'width': '800px', 'margin-right': 'auto', 'margin-left': 'auto','columnCount': 2}),
-	html.Div(id="rated_table"),
-	dcc.Graph(id="my-graph",figure = {"layout": go.Layout(title='Restaurant locations', autosize=True, hovermode='closest', showlegend=False, 
-            height=550, mapbox={'accesstoken': mapbox_access_token, 'bearing': 0, 'zoom': 15,
-            'center': {'lat': 42.3499334, 'lon':  -71.0786254}, "style": 'mapbox://styles/mapbox/light-v9'})})
-])
+html.Div(id="rated_table",style={'width':'1000px', 'margin-left':'auto', 'margin-right':'auto'}),
+
+    html.Div(dcc.Graph(id="my-graph",figure = {"layout": go.Layout(title='Restaurant locations', autosize=True, hovermode='closest', showlegend=False, 
+                    height=550, mapbox={'accesstoken': mapbox_access_token, 'bearing': 0, 'zoom': 15,
+                                    'center': {'lat': 42.3499334, 'lon':  -71.0786254}, "style": 'mapbox://styles/mapbox/light-v9'})}),
+                    style={'width':'1200px', 'margin-left':'auto', 'margin-right':'auto'}),
+	html.Div([html.H2('About:'),
+	html.Div("Eat Together recommends restaurants that optimize for total travel time \
+		and equality in travel time from multiple locations. This project was built by Anthea Cheung at Insight Data Science \
+		during the Summer 2019 Boston session."),
+	html.A("Slides", href='https://docs.google.com/presentation/d/1_KEnNJX6ppCQNbTdn_mF7463BQ7xDDJCTLmSHkp6mVs', target="_blank"),
+	html.Div(""),
+	html.A("Source Code", href='https://github.com/ahccheung/eat-coast', target="_blank"),
+        html.Div('', style={'padding':40})
+	],style={'width': '800px', 'margin-right': 'auto', 'margin-left': 'auto'})
+	])
 
 
 @app.callback(
@@ -149,40 +169,48 @@ def update_table_fig(n, loc1, loc2, loc3, loc4, cat, cat_weight, dist_weight, ra
 
         weights = [cat_weight, rate_weight, dist_weight]
         conditions = [price_range, cat]
-        points = [optimizer_app.address_to_coords(address) for address in addresses]
+        points = [optimizer_app.address_to_coords(address)[0] for address in addresses]
         lats = [point[0] for point in points]
         lons = [point[1] for point in points]
+        centroid = optimizer_app.get_centroid(points)  
 
-        top_10_info, top_10_display = optimizer_app.get_restaurants(conditions, weights, addresses, restaurants, bos_graph, grid_to_rest, grid_points)
+        top_10_info, top_10_display = optimizer_app.get_restaurants(conditions, weights, addresses, restaurants, bos_graph)
 
         table = dt.DataTable(
             columns=[{"name": i, "id": i} for i in top_10_display.columns],
-            data=top_10_display.to_dict('records')
+            data=top_10_display.to_dict('records'),
+            style_cell = {'font_size': '13px', 'font_family':'sans-serif', 
+            'minWidth': '0px', 'maxWidth':'150px', 
+            'whiteSpace':'normal'},
+            css=[{'selector': '.dash-cell div.dash-cell-value',
+            'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;'}]
             )
 
         trace1 = go.Scattermapbox(lat= top_10_info["coordinates.latitude"], lon=top_10_info["coordinates.longitude"], 
-            mode='markers', hoverinfo='text',
-            text=top_10_info['name'])
+            mode='markers+text', text = top_10_info['name'], hoverinfo = "text", textposition = 'top center',
+            marker={'size': 9}, hovertext=top_10_info['name'] + '\r' + top_10_info['price'], name='Restaurants')
 
-        trace2 = go.Scattermapbox(lat= lats, lon=lons, 
-            mode='markers', hoverinfo='text', marker={'symbol':"marker-15",'size': 10},
-            text= addresses)
+        traces = [go.Scattermapbox(lat= [points[i][0]], lon=[points[i][1]], 
+            mode='markers', hoverinfo='text', marker={'size': 9},
+            text= addresses[i], name=addresses[i]) for i in range(len(addresses))]
 
-        layout = go.Layout(title='Restaurant locations', autosize=True, hovermode='closest', showlegend=False, 
-            height=550, mapbox={'accesstoken': mapbox_access_token, 'bearing': 0, 'zoom': 15,
+        layout = go.Layout(title='Restaurant locations', autosize=True, hovermode='closest', showlegend=True, 
+            height=550, mapbox={'accesstoken': mapbox_access_token, 'bearing': 0, 
+            'center':{'lat':centroid[0], 'lon': centroid[1]}, 'zoom': optimizer_app.calc_zoom(points, top_10_info),
             "style": 'mapbox://styles/mapbox/light-v9'})
 
-        figure = {"data": [trace1, trace2], "layout": layout}
+        figure = {"data": [trace1] + traces, "layout": layout}
         return (table, figure)
+
     else:
 
         table = dt.DataTable()
         trace = [go.Scattermapbox(lat= restaurants["coordinates.latitude"], lon=restaurants["coordinates.longitude"], 
             mode='markers', hoverinfo='text',
-            text=restaurants['name'])]
+            text=[restaurants['name'],restaurants['price']])]
 
         layout = go.Layout(title='Restaurant locations', autosize=True, hovermode='closest', showlegend=False, 
-            height=550, mapbox={'accesstoken': mapbox_access_token, 'bearing': 0, 'zoom': 15,
+            height=550, mapbox={'accesstoken': mapbox_access_token, 'bearing': 0, 'zoom': 13,
             'center': {'lat': 42.3499334, 'lon':  -71.0786254}, "style": 'mapbox://styles/mapbox/light-v9'})
 
         figure = {"data": trace, "layout": layout}
