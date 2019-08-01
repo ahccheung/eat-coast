@@ -1,4 +1,4 @@
-# eat-coast
+# Eat Together
 
 Eat Together recommends restaurants that optimize for total travel time and equality in travel time from multiple locations. This project was built by Anthea Cheung at Insight Data Science during the Summer 2019 Boston session. You can view this project at [eat-coast.com](http://eat-coast.com).
 
