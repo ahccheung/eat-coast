@@ -11,15 +11,47 @@ import pandas as pd
 import numpy as np
 from ast import literal_eval
 import optimizer_app
+import math
 
+def get_centroid(points):
+    """Get centroid from a list of points."""
+
+    n = len(points)
+
+    if n==0:
+        centroid = (42.3499334,-71.0786254)
+
+    else:   
+        xsum = sum([p[0] for p in points])
+        ysum = sum([p[1] for p in points])
+        centroid = (xsum/n, ysum/n)
+
+    return centroid
+
+def calc_zoom(points):
+
+    """Calcuate the appropriate Mapbox zoom given a list of location points"""
+
+    lats = list(df['coordinates.latitude'].values) + [point[0] for point in points]
+    lons = list(df['coordinates.longitude'].values) + [point[1] for point in points]
+    min_lat = min(lats)
+    max_lat = max(lats)
+    min_lng = min(lons)
+    max_lng = max(lons)
+
+    width_y = max_lat - min_lat
+    width_x = max_lng - min_lng
+    zoom_y = -1.446*math.log(width_y) + 7
+    zoom_x = -1.415*math.log(width_x) + 7
+
+    return min(round(zoom_y,2),round(zoom_x,2))
+
+# Load transit times graph and restaurants dataframe
 bos_graph = nx.read_gpickle('transit_graph')
 restaurants = pd.read_csv('bos_restaurants_1',index_col=0, 
     converters = {"categories": literal_eval, "location.display_address":literal_eval})
 
 mapbox_access_token = 'pk.eyJ1IjoiY2hldW5nYWhjIiwiYSI6ImNqd3ZscnRyZjAxZjQzeXM1c3hxdml0aDkifQ.cyUjrtUZ01q5isW4UG9-VQ'
-#external_stylesheets = ['https://cdnjs.cloudflare.com/ajax/libs/milligram/1.3.0/milligram.css']
-
-#https://cdnjs.cloudflare.com/ajax/libs/milligram/1.3.0/milligram.css
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 server = flask.Flask(__name__)
@@ -149,6 +181,8 @@ html.Div(id="rated_table",style={'width':'1000px', 'margin-left':'auto', 'margin
     State('price_range','values')])
 
 def update_table_fig(n, loc1, loc2, loc3, loc4, cat, cat_weight, dist_weight, rate_weight, price_range):
+    """Callback for updating table and figure to be displayed on app."""
+
 
     # addresses = [loc1, loc2, loc3, loc4]
     # weights: categories of restaurant, rating, distance
@@ -169,12 +203,14 @@ def update_table_fig(n, loc1, loc2, loc3, loc4, cat, cat_weight, dist_weight, ra
 
         weights = [cat_weight, rate_weight, dist_weight]
         conditions = [price_range, cat]
-        points = [optimizer_app.address_to_coords(address)[0] for address in addresses]
+        points = [optimizer_app.address_to_coords(address) for address in addresses]
+
         lats = [point[0] for point in points]
         lons = [point[1] for point in points]
-        centroid = optimizer_app.get_centroid(points)  
+        centroid = get_centroid(points)  
 
-        top_10_info, top_10_display = optimizer_app.get_restaurants(conditions, weights, addresses, restaurants, bos_graph)
+        # Get dataframes of recommended restaurants
+        top_10, top_10_display = optimizer_app.get_restaurants(conditions, weights, addresses, restaurants, bos_graph)
 
         table = dt.DataTable(
             columns=[{"name": i, "id": i} for i in top_10_display.columns],
@@ -186,9 +222,9 @@ def update_table_fig(n, loc1, loc2, loc3, loc4, cat, cat_weight, dist_weight, ra
             'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;'}]
             )
 
-        trace1 = go.Scattermapbox(lat= top_10_info["coordinates.latitude"], lon=top_10_info["coordinates.longitude"], 
-            mode='markers+text', text = top_10_info['name'], hoverinfo = "text", textposition = 'top center',
-            marker={'size': 9}, hovertext=top_10_info['name'] + '\r' + top_10_info['price'], name='Restaurants')
+        trace1 = go.Scattermapbox(lat= top_10["coordinates.latitude"], lon=top_10["coordinates.longitude"], 
+            mode='markers+text', text = top_10['name'], hoverinfo = "text", textposition = 'top center',
+            marker={'size': 9}, hovertext=top_10['name'] + '\r' + top_10['price'], name='Restaurants')
 
         traces = [go.Scattermapbox(lat= [points[i][0]], lon=[points[i][1]], 
             mode='markers', hoverinfo='text', marker={'size': 9},
@@ -196,7 +232,7 @@ def update_table_fig(n, loc1, loc2, loc3, loc4, cat, cat_weight, dist_weight, ra
 
         layout = go.Layout(title='Restaurant locations', autosize=True, hovermode='closest', showlegend=True, 
             height=550, mapbox={'accesstoken': mapbox_access_token, 'bearing': 0, 
-            'center':{'lat':centroid[0], 'lon': centroid[1]}, 'zoom': optimizer_app.calc_zoom(points, top_10_info),
+            'center':{'lat':centroid[0], 'lon': centroid[1]}, 'zoom': calc_zoom(points),
             "style": 'mapbox://styles/mapbox/light-v9'})
 
         figure = {"data": [trace1] + traces, "layout": layout}
